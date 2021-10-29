@@ -23,6 +23,7 @@ Port 8080 from the container is mapped to the system's port 8080. This can be an
 ```docker run -p 8080:8080 --env-file .env ocr-rest-service```
 
 An alternative is to set each environment variable individually, for example:
+
 ```docker run -p 8080:8080 -e PORT='8080' -e AUTH_KEY='secretkey123' ocr-rest-service```
 
 ### Send GET Request
