@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -23,17 +23,17 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/text/url", urlHandler).Methods("POST")
 	router.HandleFunc("/text/upload", uploadHandler).Methods("POST")
-	log.Print("Server started on :" + webPort)
+	slog.Info("Server started", "PORT", webPort)
 	err := http.ListenAndServe(":"+webPort, router)
 	if err != nil {
-		log.Fatalln(err)
+		slog.Error("Starting server", "error", err)
 	}
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	validToken := isTokenValid(w, r)
 	if !validToken {
-		JSONError(w, "Invalid token.", http.StatusUnauthorized)
+		JSONError(w, "Invalid API key.", http.StatusUnauthorized)
 		return
 	}
 	file, _, err := r.FormFile("file")
@@ -47,7 +47,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, "Error reading from image: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	result := map[string]interface{}{
+	w.Header().Set("Content-Type", "application/json")
+	result := map[string]string{
 		"text": text,
 	}
 	json.NewEncoder(w).Encode(&result)
@@ -75,7 +76,8 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		JSONError(w, "Error reading from image: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	result := map[string]interface{}{
+	w.Header().Set("Content-Type", "application/json")
+	result := map[string]string{
 		"text": text,
 	}
 	json.NewEncoder(w).Encode(&result)
@@ -83,6 +85,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 
 func runOCR(image io.Reader) (string, error) {
 	client := gosseract.NewClient()
+	// client.SetWhitelist("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:!?-()[]\"'`~@#$%^&*+=_\\|/<> ")
 	defer client.Close()
 	bytes, err := io.ReadAll(image)
 	if err != nil {
@@ -101,6 +104,7 @@ func runOCR(image io.Reader) (string, error) {
 
 func JSONError(w http.ResponseWriter, errorMessage string, code int) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Type", "application/json")
 	resp := map[string]string{
 		"error": errorMessage,
 	}
@@ -117,7 +121,7 @@ func loadEnv() {
 func mustGetenv(k string) string {
 	v := os.Getenv(k)
 	if v == "" {
-		log.Fatalf("%s environment variable not set.\n", k)
+		slog.Error("Getting environment variable", "variable", k)
 	}
 	return v
 }
