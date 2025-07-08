@@ -1,20 +1,27 @@
-FROM golang:alpine
-
-RUN apk update
-RUN apk add \
+FROM golang:alpine AS builder
+RUN apk update \
+    && apk add --no-cache \
     g++ \
     git \
     musl-dev \
     go \
-    tesseract-ocr-dev
-
-RUN apk add tesseract-ocr-data-eng leptonica-dev
+    tesseract-ocr-dev \
+    tesseract-ocr-data-eng \
+    leptonica-dev
 
 WORKDIR /app
-
 COPY . .
-RUN go mod download
+RUN go mod download \
+    && go build -o /ocr
 
-RUN go build -o /ocr
+FROM alpine
+
+RUN apk update \
+    && apk add --no-cache \
+    tesseract-ocr-dev \
+    tesseract-ocr-data-eng \
+    leptonica-dev 
+
+COPY --from=builder /ocr /ocr
 
 CMD ["/ocr"]

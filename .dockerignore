@@ -1,2 +1,29 @@
+# Environment and build artifacts
 .env
 main.exe
+
+# Git
+.git
+.gitignore
+README.md
+LICENSE
+
+# Documentation
+*.md
+
+# Build artifacts
+tmp/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Development tools
+air.sh
