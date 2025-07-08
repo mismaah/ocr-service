@@ -30,29 +30,13 @@ An alternative is to set each environment variable individually, for example:
 
 ### Send GET Request
 
-#### Using CURL
+#### Text from URL
 
-`curl -H "Authorization:secretkey123" http://localhost:8080/imagetotext?url=https://image.png`
+`curl --location --request POST 'http://localhost:8123/text/url?url=https://image.png' --header 'Authorization: ••••••'`
 
-#### Using Go
+#### Text from file upload
 
-```go
-url := "http://localhost:8080/imagetotext?url=https://image.png"
-request, _ := http.NewRequest("GET", url, nil)
-request.Header.Set("Authorization", "secretkey123")
-client := &http.Client{}
-response, _ := client.Do(request)
-```
-
-#### Using JavaScript (axios)
-
-```javascript
-axios({
-  url: "http://localhost:8080/imagetotext?url=https://image.png",
-  method: "GET",
-  headers: { Authorization: "secretkey123" },
-});
-```
+`curl --location 'http://localhost:8123/text/upload' --header 'Authorization: ••••••' --form 'file=@"file.jpg"'`
 
 ### Response
 
