@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -20,16 +21,39 @@ var (
 func main() {
 	loadEnv()
 	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/imagetotext", ocrHandler).Methods("GET")
+	router.HandleFunc("/text/url", urlHandler).Methods("POST")
+	router.HandleFunc("/text/upload", uploadHandler).Methods("POST")
 	log.Print("Server started on :" + webPort)
 	err := http.ListenAndServe(":"+webPort, router)
 	if err != nil {
-		log.Print(err)
+		log.Fatalln(err)
 	}
 }
 
-func ocrHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	validToken := isTokenValid(w, r)
+	if !validToken {
+		JSONError(w, "Invalid token.", http.StatusUnauthorized)
+		return
+	}
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		JSONError(w, "Error uploading file: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+	text, err := runOCR(file)
+	if err != nil {
+		JSONError(w, "Error reading from image: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result := map[string]interface{}{
+		"text": text,
+	}
+	json.NewEncoder(w).Encode(&result)
+}
+
+func urlHandler(w http.ResponseWriter, r *http.Request) {
 	validToken := isTokenValid(w, r)
 	if !validToken {
 		JSONError(w, "Invalid token.", http.StatusUnauthorized)
@@ -43,13 +67,12 @@ func ocrHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Print(err)
-		JSONError(w, "Unexpected error occured.", http.StatusInternalServerError)
+		JSONError(w, "Error retrieving image: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	text, err := runOCR(resp.Body)
 	if err != nil {
-		JSONError(w, "Error reading from image.", http.StatusInternalServerError)
+		JSONError(w, "Error reading from image: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	result := map[string]interface{}{
@@ -63,12 +86,15 @@ func runOCR(image io.Reader) (string, error) {
 	defer client.Close()
 	bytes, err := io.ReadAll(image)
 	if err != nil {
-		return "", err
+		return "", errors.New("error reading image data: " + err.Error())
 	}
-	client.SetImageFromBytes(bytes)
+	err = client.SetImageFromBytes(bytes)
+	if err != nil {
+		return "", errors.New("error setting image from bytes: " + err.Error())
+	}
 	text, err := client.Text()
 	if err != nil {
-		return "", err
+		return "", errors.New("error extracting text from image: " + err.Error())
 	}
 	return text, err
 }
