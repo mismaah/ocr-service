@@ -1,13 +1,13 @@
 # OCR Service
 
-Uses [gosseract](https://github.com/otiai10/gosseract) (wrapper for [tesseract-ocr](https://github.com/tesseract-ocr/tesseract)) to provide a Service which returns text from an image. Input options are image URL and image upload using a multipart-form.
+Uses [gosseract](https://github.com/otiai10/gosseract) (wrapper for [tesseract-ocr](https://github.com/tesseract-ocr/tesseract)) to provide a service which returns text from an image. Input options are image URL and image upload using a multipart-form.
 
 ## Usage
 
 ### Pull and start the service
 
 ```bash
-docker run --name ocr-service --restart unless-stopped -p 8080:8080 -e PORT=8080 -e AUTH_KEY=secret123 ghcr.io/mismaah/ocr-service:main
+docker run --name ocr-service --restart unless-stopped -p 8123:8123 -e PORT=8123 -e AUTH_KEY=secret123 ghcr.io/mismaah/ocr-service:main
 ```
 
 `AUTH_KEY` is an optional environment variable. If this is set, all API calls should have the Authorization header.
