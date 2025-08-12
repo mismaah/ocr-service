@@ -21,6 +21,7 @@ var (
 func main() {
 	loadEnv()
 	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/health", healthCheckHandler).Methods("GET")
 	router.HandleFunc("/text/url", urlHandler).Methods("POST")
 	router.HandleFunc("/text/upload", uploadHandler).Methods("POST")
 	slog.Info("Server started", "PORT", webPort)
@@ -135,4 +136,13 @@ func isTokenValid(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	return false
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"status": "ok"}
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		JSONError(w, "Error encoding response: "+err.Error(), http.StatusInternalServerError)
+	}
 }
